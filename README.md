@@ -80,3 +80,16 @@ Remove it with `schtasks /Delete /TN "GTA6 Question Tracker"`.
 - Topics: `TOPICS` in `topics.py`
 - What counts as a question: `detector.py`
 - Search terms and subreddits: `SEARCH_TERMS` and `REDDIT_SUBS` in `sources.py`
+
+## Creator tools (separate from the tracker)
+
+`creator/` has tools for making GTA 6 videos. They run locally and never upload anything.
+
+- [`creator/STREAMING_PLAN.md`](creator/STREAMING_PLAN.md) – PS5 → YouTube streaming plan, weekly schedule and clip workflow
+- `creator/clipper.py` – cut a recording into 16:9 videos + vertical Shorts with a ready upload sheet (needs ffmpeg)
+- `creator/ideas.py` – turn collected questions into video ideas (`content_ideas.md`)
+
+```bash
+python creator/clipper.py stream.mp4 clips.txt --lang hi --channel "Your Channel"
+python creator/ideas.py --days 7
+```
