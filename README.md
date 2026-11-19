@@ -88,6 +88,7 @@ Remove it with `schtasks /Delete /TN "GTA6 Question Tracker"`.
 - [`creator/STREAMING_PLAN.md`](creator/STREAMING_PLAN.md) – PS5 → YouTube streaming plan, weekly schedule and clip workflow
 - `creator/clipper.py` – cut a recording into 16:9 videos + vertical Shorts with a ready upload sheet (needs ffmpeg)
 - `creator/clip-marker.html` – phone page: tap during a stream to mark moments, then copy a ready clips.txt
+- `creator/find_moments.py` – scans a long recording for loud/fast-action peaks and writes clips.txt automatically
 - `creator/ideas.py` – turn collected questions into video ideas (`content_ideas.md`)
 
 ```bash
