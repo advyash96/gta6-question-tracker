@@ -83,15 +83,29 @@ Remove it with `schtasks /Delete /TN "GTA6 Question Tracker"`.
 
 ## Creator tools (separate from the tracker)
 
-`creator/` has tools for making GTA 6 videos. They run locally and never upload anything.
+`creator/` turns your GTA 6 streams into Shorts and videos. Everything runs on your own computer;
+nothing is uploaded or posted for you.
 
-- [`creator/STREAMING_PLAN.md`](creator/STREAMING_PLAN.md) – PS5 → YouTube streaming plan, weekly schedule and clip workflow
-- `creator/clipper.py` – cut a recording into 16:9 videos + vertical Shorts with a ready upload sheet (needs ffmpeg)
-- `creator/clip-marker.html` – phone page: tap during a stream to mark moments, then copy a ready clips.txt
-- `creator/find_moments.py` – scans a long recording for loud/fast-action peaks and writes clips.txt automatically
-- `creator/ideas.py` – turn collected questions into video ideas (`content_ideas.md`)
+**One command – link or file in, finished clips out:**
 
 ```bash
-python creator/clipper.py stream.mp4 clips.txt --lang hi --channel "Your Channel"
-python creator/ideas.py --days 7
+pip install -r creator/requirements.txt      # yt-dlp + faster-whisper (also needs ffmpeg)
+python creator/autoclip.py https://www.youtube.com/watch?v=VIDEO_ID --lang hi --channel "My Channel"
+python creator/autoclip.py stream.mp4 --top 10 --facecam top-right --font "Nirmala UI"
 ```
+
+You get, in `clips/`: a 16:9 video and a 9:16 Short per moment (captions, hook title, loudness
+normalised), `upload_sheet.md` with titles/descriptions/hashtags, `clips.txt` and `frames/` to review.
+
+| Tool | What it does |
+|---|---|
+| `autoclip.py` | Whole pipeline: download → transcribe → find moments → cut → upload sheet |
+| `fetch.py` | Download a video + its live-chat replay with yt-dlp |
+| `transcribe.py` | Offline speech-to-text with word timings (faster-whisper; Hindi and English) |
+| `find_moments.py` | Scores every second by loudness, fast action, chat spikes and hype words ("bhai", "kya", "oh my god"); writes `clips.txt` |
+| `clipper.py` | Cuts `clips.txt` into videos + Shorts: word-by-word captions, hook title, facecam-on-top layout, black-bar removal, `--mute` for radio music |
+| `clip-marker.html` | Phone page: tap during a live stream to mark moments, copy a ready `clips.txt` |
+| `ideas.py` | Turns questions collected by the tracker into video ideas |
+| `STREAMING_PLAN.md` | PS5 → YouTube plan, weekly schedule, clip and upload workflow |
+
+Only clip videos you have the rights to – your own streams.
