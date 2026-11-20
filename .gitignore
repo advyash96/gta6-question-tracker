@@ -222,3 +222,6 @@ __marimo__/
 # Creator tool outputs
 clips/
 content_ideas.md
+.autoclip_ready
+.autoclip_channel
+live_session/
