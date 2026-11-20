@@ -17,8 +17,10 @@ and one upload_sheet.md with a ready title, description and hashtags for each cl
 
 Extras:
     --captions        burn word-by-word captions from what you say (needs: pip install faster-whisper)
-    --facecam POS     Shorts get your facecam on top and gameplay below. POS = top-left, top-right,
+    --facecam POS     Shorts get your facecam on top and gameplay below. POS = auto (found by face
+                      tracking), top-left, top-right,
                       bottom-left, bottom-right, or x,y,w,h in percent of the frame, e.g. 75,0,25,25
+    --shorts-style track   vertical crop that follows your face (full-screen camera footage)
     --no-hook         don't show the clip title as a big text hook for the first 3 seconds
     --keep-bars       don't auto-remove black bars
 
@@ -92,8 +94,9 @@ def run(cmd: list[str], cwd: Path | None = None) -> str:
 def probe_size(src: Path) -> tuple[int, int]:
     out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
                           "stream=width,height", "-of", "csv=p=0", str(src)],
-                         capture_output=True, text=True).stdout.strip().split(",")
-    return int(out[0]), int(out[1])
+                         capture_output=True, text=True).stdout
+    first = next(ln for ln in out.splitlines() if ln.strip()).strip().split(",")
+    return int(first[0]), int(first[1])
 
 
 def detect_bars(src: Path, at: float) -> tuple[int, int, int, int] | None:
@@ -136,6 +139,8 @@ def short_filter(style: str, size: tuple[int, int], facecam: tuple | None) -> st
         return (f"split[c][g];[c]crop={fw}:{fh}:{fx}:{fy},scale=1080:{top_h}[top];"
                 f"[g]scale=1080:{bot_h}:force_original_aspect_ratio=increase,crop=1080:{bot_h}[bot];"
                 f"[top][bot]vstack,setsar=1")
+    if style == "track":
+        return "TRACK"
     if style == "crop":
         return "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1"
     return ("split[a][b];"
@@ -164,7 +169,19 @@ def make_clip(src: Path, out_dir: Path, base: str, start: float, dur: float, *, 
 
     if shorts and dur <= SHORTS_MAX_SECONDS:
         row["short"] = f"{base}_short.mp4"
-        vf = f"[0:v]{pre}{short_filter(style, size, facecam)}"
+        sf = short_filter(style, size, facecam)
+        if sf == "TRACK":
+            from facetrack import track_crop, write_sendcmd
+            tr = track_crop(src, start, dur, size[0], size[1], bars)
+            if tr:
+                cw, pts = tr
+                cmd = write_sendcmd(out_dir / f"{base}_track.cmd", pts)
+                sf = (f"sendcmd=f={cmd.name},crop@track=w={cw}:h={size[1]}:x={pts[0][1]}:y=0,"
+                      f"scale=1080:1920,setsar=1")
+            else:
+                print("    no face found: using a centre crop")
+                sf = short_filter("crop", size, None)
+        vf = f"[0:v]{pre}{sf}"
         if words or hook:
             ass = write_ass(out_dir / f"{base}_short.ass", vertical=True, words=words, clip_start=start,
                             clip_end=start + dur, hook=title if hook else None, font=font,
@@ -174,7 +191,7 @@ def make_clip(src: Path, out_dir: Path, base: str, start: float, dur: float, *, 
              *VIDEO_ARGS, *audio_args(mute), row["short"]], cwd=out_dir)
     elif shorts:
         print(f"    skipped Short: {dur:.0f}s is longer than {SHORTS_MAX_SECONDS}s")
-    for f in out_dir.glob(f"{base}_*.ass"):
+    for f in [*out_dir.glob(f"{base}_*.ass"), *out_dir.glob(f"{base}_*.cmd")]:
         f.unlink()
     return row
 
@@ -214,25 +231,28 @@ def write_sheet(rows: list[dict], out_dir: Path, lang: str, channel: str) -> Pat
 def parse_facecam(v: str | None) -> tuple | None:
     if not v:
         return None
+    if v == "auto":
+        return "auto"
     if v in FACECAM_PRESETS:
         return FACECAM_PRESETS[v]
     try:
         x, y, w, h = (float(p) for p in v.split(","))
     except ValueError:
-        sys.exit("--facecam must be top-left/top-right/bottom-left/bottom-right or x,y,w,h in percent")
+        sys.exit("--facecam must be auto, top-left/top-right/bottom-left/bottom-right or x,y,w,h in percent")
     return x, y, w, h
 
 
 def add_common_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--out", type=Path, default=Path("clips"), help="output folder (default: clips)")
-    ap.add_argument("--shorts-style", choices=["blur", "crop"], default="blur",
-                    help="blur = whole frame on blurred background; crop = fill screen with the centre")
+    ap.add_argument("--shorts-style", choices=["blur", "crop", "track"], default="blur",
+                    help="blur = whole frame on blurred background; crop = fill screen with the centre; "
+                         "track = fill screen and follow your face (camera footage)")
     ap.add_argument("--no-shorts", action="store_true", help="only make the 16:9 versions")
     ap.add_argument("--mute", action="store_true",
                     help="remove all audio (use if a clip has copyrighted in-game radio music)")
     ap.add_argument("--captions", action="store_true", help="burn word-by-word captions (faster-whisper)")
     ap.add_argument("--model", default="small", help="speech model for --captions (default: small)")
-    ap.add_argument("--facecam", help="facecam position for Shorts, e.g. top-right or 75,0,25,25")
+    ap.add_argument("--facecam", help="facecam position for Shorts: auto (face tracking finds it), top-right, or 75,0,25,25")
     ap.add_argument("--no-hook", action="store_true", help="no title text in the first 3 s of Shorts")
     ap.add_argument("--keep-bars", action="store_true", help="don't auto-remove black bars")
     ap.add_argument("--font", default="Arial", help="caption font (Hindi on Windows: 'Nirmala UI')")
@@ -250,6 +270,12 @@ def cut_all(src: Path, clips: list[dict], a: argparse.Namespace, words: list | N
     if bars:
         print(f"Removing black bars (crop to {bars[0]}x{bars[1]})")
     facecam = parse_facecam(a.facecam)
+    if facecam == "auto":
+        from facetrack import find_facecam
+        from find_moments import duration
+        print("Looking for your facecam...")
+        facecam = find_facecam(src, duration(src), bars)
+        print(f"  found at {facecam}" if facecam else "  no steady facecam: using the normal layout")
     a.out.mkdir(parents=True, exist_ok=True)
     rows = []
     for n, c in enumerate(clips, 1):

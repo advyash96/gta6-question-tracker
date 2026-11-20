@@ -91,7 +91,8 @@ nothing is uploaded or posted for you.
 ```bash
 pip install -r creator/requirements.txt      # yt-dlp + faster-whisper (also needs ffmpeg)
 python creator/autoclip.py https://www.youtube.com/watch?v=VIDEO_ID --lang hi --channel "My Channel"
-python creator/autoclip.py stream.mp4 --top 10 --facecam top-right --font "Nirmala UI"
+python creator/autoclip.py stream.mp4 --top 10 --facecam auto --font "Nirmala UI"
+python creator/live.py https://www.youtube.com/watch?v=LIVE_ID --facecam auto   # while you're live
 ```
 
 You get, in `clips/`: a 16:9 video and a 9:16 Short per moment (captions, hook title, loudness
@@ -100,10 +101,12 @@ normalised), `upload_sheet.md` with titles/descriptions/hashtags, `clips.txt` an
 | Tool | What it does |
 |---|---|
 | `autoclip.py` | Whole pipeline: download → transcribe → find moments → cut → upload sheet |
+| `live.py` | Records a live stream as it happens and cuts a clip within about a minute whenever chat explodes or the audio spikes; saves `full.mp4` + chat replay at the end |
+| `facetrack.py` | Face tracking: finds your facecam automatically (`--facecam auto`) and keeps a vertical crop on your face (`--shorts-style track`) |
 | `fetch.py` | Download a video + its live-chat replay with yt-dlp |
 | `transcribe.py` | Offline speech-to-text with word timings (faster-whisper; Hindi and English) |
 | `find_moments.py` | Scores every second by loudness, fast action, chat spikes and hype words ("bhai", "kya", "oh my god"); writes `clips.txt` |
-| `clipper.py` | Cuts `clips.txt` into videos + Shorts: word-by-word captions, hook title, facecam-on-top layout, black-bar removal, `--mute` for radio music |
+| `clipper.py` | Cuts `clips.txt` into videos + Shorts: word-by-word captions, hook title, facecam-on-top layout (manual or `auto`), face-tracking crop, black-bar removal, `--mute` for radio music |
 | `clip-marker.html` | Phone page: tap during a live stream to mark moments, copy a ready `clips.txt` |
 | `ideas.py` | Turns questions collected by the tracker into video ideas |
 | `STREAMING_PLAN.md` | PS5 → YouTube plan, weekly schedule, clip and upload workflow |
