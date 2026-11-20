@@ -86,6 +86,8 @@ Remove it with `schtasks /Delete /TN "GTA6 Question Tracker"`.
 `creator/` turns your GTA 6 streams into Shorts and videos. Everything runs on your own computer;
 nothing is uploaded or posted for you.
 
+**Easiest (Windows): double-click `AutoClip.bat`, paste a YouTube link, get finished clips.** It installs Python, ffmpeg and Deno on first run.
+
 **One command – link or file in, finished clips out:**
 
 ```bash
