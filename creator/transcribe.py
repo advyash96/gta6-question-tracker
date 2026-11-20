@@ -17,21 +17,25 @@ import sys
 from pathlib import Path
 
 
-def words_path(video: Path) -> Path:
-    return video.with_suffix(".words.json")
+def words_path(video: Path, translate: bool = False) -> Path:
+    return video.with_suffix(".words.en.json" if translate else ".words.json")
 
 
-def transcribe(video: Path, lang: str | None = None, model: str = "small") -> list[dict]:
-    cache = words_path(video)
+def transcribe(video: Path, lang: str | None = None, model: str = "small",
+               translate: bool = False) -> list[dict]:
+    """translate=True: whatever language you speak, the words come out in English."""
+    cache = words_path(video, translate)
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
     try:
         from faster_whisper import WhisperModel
     except ImportError:
         sys.exit("faster-whisper is not installed. Run: pip install faster-whisper")
-    print(f"Transcribing {video.name} with the '{model}' model (first run downloads it)...")
+    what = "Translating your speech to English" if translate else "Transcribing"
+    print(f"{what}: {video.name} with the '{model}' model (first run downloads it)...")
     m = WhisperModel(model, device="auto", compute_type="int8")
-    segments, info = m.transcribe(str(video), language=lang, word_timestamps=True, vad_filter=True)
+    segments, info = m.transcribe(str(video), language=lang, word_timestamps=True, vad_filter=True,
+                                    task="translate" if translate else "transcribe")
     words = []
     for seg in segments:
         for w in seg.words or []:
@@ -43,7 +47,9 @@ def transcribe(video: Path, lang: str | None = None, model: str = "small") -> li
 
 
 def load_words(video: Path) -> list[dict]:
-    p = words_path(video)
+    p = words_path(video, True)
+    if not p.exists():
+        p = words_path(video)
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
 
 
@@ -52,9 +58,10 @@ def main() -> None:
     ap.add_argument("video", type=Path)
     ap.add_argument("--lang", help="language code, e.g. hi or en (default: auto-detect)")
     ap.add_argument("--model", default="small")
+    ap.add_argument("--translate", action="store_true", help="output English, whatever you speak")
     a = ap.parse_args()
-    words = transcribe(a.video, a.lang, a.model)
-    print(f"Saved {len(words)} words to {words_path(a.video)}")
+    words = transcribe(a.video, a.lang, a.model, a.translate)
+    print(f"Saved {len(words)} words to {words_path(a.video, a.translate)}")
 
 
 if __name__ == "__main__":

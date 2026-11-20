@@ -2,6 +2,7 @@
 
     python creator/autoclip.py https://www.youtube.com/watch?v=VIDEO_ID --lang hi --channel "My Channel"
     python creator/autoclip.py stream.mp4 --top 10 --facecam top-right
+    python creator/autoclip.py LINK --translate --lang en    # you speak Hindi, captions in English
 
 Steps:
   1. download the video + live-chat replay (yt-dlp)         skipped for a local file
@@ -53,7 +54,7 @@ def main() -> None:
     words = None
     if not a.no_speech:
         from transcribe import transcribe
-        words = transcribe(src, a.lang if a.lang != "en" else None, a.model)
+        words = transcribe(src, None if a.translate or a.lang == "en" else a.lang, a.model, a.translate)
         a.captions = True
 
     moments = pick_moments(src, top=a.top, before=a.before, after=a.after, gap=a.gap,

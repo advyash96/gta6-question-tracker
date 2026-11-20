@@ -252,6 +252,8 @@ def add_common_args(ap: argparse.ArgumentParser) -> None:
                     help="remove all audio (use if a clip has copyrighted in-game radio music)")
     ap.add_argument("--captions", action="store_true", help="burn word-by-word captions (faster-whisper)")
     ap.add_argument("--model", default="small", help="speech model for --captions (default: small)")
+    ap.add_argument("--translate", action="store_true",
+                    help="English captions even if you speak Hindi (translates your speech)")
     ap.add_argument("--facecam", help="facecam position for Shorts: auto (face tracking finds it), top-right, or 75,0,25,25")
     ap.add_argument("--no-hook", action="store_true", help="no title text in the first 3 s of Shorts")
     ap.add_argument("--keep-bars", action="store_true", help="don't auto-remove black bars")
@@ -265,7 +267,7 @@ def cut_all(src: Path, clips: list[dict], a: argparse.Namespace, words: list | N
         sys.exit("ffmpeg not found. Install it from https://ffmpeg.org/download.html and add it to PATH.")
     if a.captions and words is None:
         from transcribe import transcribe
-        words = transcribe(src, a.lang if a.lang != "en" else None, a.model)
+        words = transcribe(src, None if a.translate or a.lang == "en" else a.lang, a.model, a.translate)
     bars = None if a.keep_bars else detect_bars(src, clips[0]["start"])
     if bars:
         print(f"Removing black bars (crop to {bars[0]}x{bars[1]})")

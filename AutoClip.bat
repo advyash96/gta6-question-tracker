@@ -46,10 +46,10 @@ set URL=%URL:"=%
 set OUT=clips\run_%RANDOM%
 
 echo.
-echo Working... (download, speech-to-text, finding moments, cutting clips)
+echo Working... (download, Hindi speech to English captions, finding moments, cutting clips)
 echo The first video takes longest because the speech model downloads once.
 echo.
-python creator\autoclip.py "%URL%" --facecam auto --lang hi --font "Nirmala UI" --channel "%CHANNEL%" --out "%OUT%"
+python creator\autoclip.py "%URL%" --facecam auto --translate --lang en --channel "%CHANNEL%" --out "%OUT%"
 if errorlevel 1 (
   echo.
   echo Something went wrong. Copy the error above and paste it to Claude.

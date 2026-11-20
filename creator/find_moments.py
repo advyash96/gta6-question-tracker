@@ -29,7 +29,7 @@ from clipper import fmt  # noqa: E402
 
 HYPE = re.compile(
     r"\b(oh my god|omg|what+|no+ no+|bro+|bhai+|kya+|arre+|abe+|bhago+|mar gaya|gaya|wow+|let'?s go+|"
-    r"holy|yes+|oh no|run+|wait+|bas+|chal+|ruk+|wah+|haha+|lol)\b|भाई|क्या|अरे|भागो|मर गया|वाह|रुक|चल",
+    r"holy|yes+|oh no|run+|wait+|brother|crazy|insane|damn|dude|look at|bas+|chal+|ruk+|wah+|haha+|lol)\b|भाई|क्या|अरे|भागो|मर गया|वाह|रुक|चल",
     re.I)
 WEIGHTS = {"audio": 1.0, "action": 0.6, "chat": 1.2, "speech": 0.8}
 
